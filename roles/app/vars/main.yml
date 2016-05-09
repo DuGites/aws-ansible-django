@@ -1,0 +1,6 @@
+hostname: mendonca
+docroot: /srv/www
+owner: www-data
+group: www-data
+django_settings_file: 'mendonca.settings.local'
+settings_dir: '/srv/www/current/'

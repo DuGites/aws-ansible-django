@@ -1,0 +1,17 @@
+- name: Creates directory
+  file: path=/var/log/celery/ state=directory owner=www-data group=www-data mode=0775
+
+- name: Creates Uwsgi Dir
+  file: path=/var/log/uwsgi/ state=directory owner=www-data group=www-data mode=0775
+  tags:
+      - configuration
+
+- name: Creates uwsgi log file.
+  file: path=/var/log/uwsgi/kevlar.log state=touch owner=www-data group=www-data mode=0775
+  tags:
+      - configuration
+
+- name: Creates celery  log file.
+  file: path=/var/log/uwsgi/celery_error.log state=touch owner=www-data group=www-data mode=0775
+  tags:
+      - configuration

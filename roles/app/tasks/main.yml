@@ -1,0 +1,133 @@
+- name: install additional packages
+  apt: pkg={{ item }} state=present update_cache=yes cache_valid_time=3600
+  sudo: yes
+  sudo_user: root
+  with_items:
+    - libpq-dev # Required for Ansible to interact with postgres
+    - python-psycopg2 # Required for Ansible to interact with postgres
+    - ntp
+    - supervisor
+    - binutils
+    - libproj-dev
+    - gdal-bin
+    - memcached
+    - libmemcached-dev
+    - rabbitmq-server
+    - libgeoip1
+    - libgeoip-dev
+    - geoip-bin
+
+    # Python Dev
+    - python-dev
+    - python-setuptools
+    - python-virtualenv
+    - python-passlib
+
+- name: install additional packages for PIL support
+  apt: pkg={{ item }} state=present update_cache=yes cache_valid_time=3600
+  with_items:
+    - libtiff4-dev
+    - libjpeg8-dev
+    - libfreetype6-dev
+    - liblcms2-dev
+    - libwebp-dev
+    - tcl8.5-dev
+    - tk8.5-dev
+    - python-tk
+
+- include: redis.yml
+
+- name: check path
+  stat: path={{ docroot }}/previous
+  register: p
+
+- name: clean previous
+  file: dest={{ docroot }}/previous state=absent
+  when: p.stat.isdir is defined and p.stat.isdir
+
+- name: copy latest to previous
+  file: src={{ docroot }}/latest dest={{ docroot }}/previous state=directory
+
+- name: create symlink
+  file: src={{ docroot }}/previous dest={{ docroot }}/current state=link
+  when: p.stat.isdir is defined and p.stat.isdir
+  notify:
+    - restart uwsgi
+
+- name: deploy build
+  unarchive: src=../latest.tgz dest={{ docroot }}
+
+- name: clean latest
+  file: dest={{ docroot }}/latest state=absent
+
+- name: copy src to latest
+  command: mv {{ docroot }}/src {{ docroot }}/latest
+
+- name: change owner on www
+  file: dest={{ docroot }} owner={{ owner }} group={{ group }} state=directory recurse=yes
+
+- name: install dependencies
+  pip: virtualenv={{ docroot }}/latest/venv requirements={{ docroot }}/latest/requirements.txt state=present
+
+- include: createfile.yml
+- include: djangotasks.yml
+
+- name: create symlink
+  file:
+      src={{ docroot }}/latest
+      dest={{ docroot }}/current
+      state=link
+
+- name: check path
+  stat: path=tmp
+  register: t
+
+- name: change owner on tmp
+  file: dest=tmp owner={{ owner }} group={{ group }} state=directory recurse=yes
+  when: t.stat.isdir is defined and t.stat.isdir
+
+- name: copy uwsgi ini for server
+  template:
+      src=uwsgi.ini.j2
+      dest={{ docroot }}/current/mendonca/uwsgi.ini
+      owner={{ owner }}
+      group={{ group }}
+  notify:
+    - update supervisor
+
+- name: make sure supervisor is running
+  service:
+      name=supervisor
+      state=started
+
+- name: copy supervisor configuration for worker
+  template:
+      src=uwsgi.conf.j2
+      dest=/etc/supervisor/conf.d/uwsgi.conf
+  notify:
+    - update supervisor
+
+- name: copy celery configuration for worker
+  template:
+      src=celeryd.conf.j2
+      dest=/etc/supervisor/conf.d/celeryd.conf
+  notify:
+    - update supervisor
+
+- name: Delete settings on App Server to Replace
+  file: state=absent dest=/srv/www/current/mendonca/settings/base.py
+  when: execute == "true"
+  tags:
+    - settings
+
+- name: Update settings on App Server when needed
+  template: src=base.py.j2 dest=/srv/www/current/mendonca/settings/base.py
+  when: execute == "true"
+  tags:
+    - settings
+
+- name: Restart Uwsgi Process
+  supervisorctl: name={{app_name}} state=restarted config=/etc/supervisor/supervisord.conf
+  when: execute == "true"
+  tags:
+    - settings

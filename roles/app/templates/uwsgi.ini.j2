@@ -1,0 +1,19 @@
+# start uwsgi server: uwsgi --ini uwsgi.ini
+
+[uwsgi]
+processes=4
+listen=127
+threads=4
+master=true
+wsgi-file={{ docroot }}/current/mendonca/wsgi.py
+module=mendonca.wsgi:application
+#socket=/tmp/uwsgi.sock
+socket={{ ansible_eth0.ipv4.address }}:8001
+pidfile=/tmp/mendonca-master.pid
+pythonpath={{ docroot }}/current/mendonca:{{ docroot }}/current
+home={{ docroot }}/current/venv
+vacuume=true
+chmod-socket=775
+env=DJANGO_SETTINGS_MODULE=mendonca.settings.local
+env=PATH={{ docroot }}/current/venv/bin:$PATH
+env=PYTHONPATH={{ docroot }}/current/:{{ docroot }}/current/mendonca

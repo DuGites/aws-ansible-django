@@ -1,0 +1,8 @@
+- name: enable site
+  file:
+    src=/etc/nginx/sites-available/wkevlar.conf
+    dest=/etc/nginx/sites-enabled/wkevlar.conf
+    state=link
+
+- name: update nginx
+  service: name=nginx state=restarted

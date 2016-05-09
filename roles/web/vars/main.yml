@@ -1,0 +1,5 @@
+docroot: /srv/www
+owner: www-data
+group: www-data
+subdomain: aws-dev
+hostname: ip-172-31-31-241

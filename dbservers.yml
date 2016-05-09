@@ -1,0 +1,4 @@
+- hosts: dbservers
+  sudo: true
+  roles:
+      - db

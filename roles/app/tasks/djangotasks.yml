@@ -1,0 +1,29 @@
+- name: django collectstatic
+  django_manage:
+      command=collectstatic
+      app_path={{ docroot }}/latest
+      virtualenv={{ docroot }}/latest/venv
+      settings={{ django_settings_file }}
+      pythonpath={{ settings_dir }}
+  tags:
+      - collectstatic
+
+- name: django syncdb
+  django_manage:
+      command=syncdb
+      app_path={{ docroot }}/latest
+      virtualenv={{ docroot }}/latest/venv
+      settings={{ django_settings_file }}
+      pythonpath={{ settings_dir }}
+  tags:
+      - syncdb
+
+- name: django migrate
+  django_manage:
+      command=migrate
+      app_path={{ docroot }}/latest
+      virtualenv={{ docroot }}/latest/venv
+      settings={{ django_settings_file }}
+      pythonpath={{ settings_dir }}
+  tags:
+      - migrate

@@ -1,0 +1,6 @@
+- name: update supervisor
+  command: /usr/bin/supervisorctl update; /usr/bin/supervisorctl start all
+
+- name: restart uwsgi
+  command: /usr/bin/supervisorctl restart {{ app_name }}
+

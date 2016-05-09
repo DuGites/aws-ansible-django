@@ -1,0 +1,78 @@
+user www-data;
+worker_rlimit_nofile 100000;
+worker_processes 6;
+pid /var/run/nginx.pid;
+
+events {
+	worker_connections 20000;
+	use epoll;
+	multi_accept on;
+	accept_mutex on;
+}
+
+http {
+
+    #include blockips.conf;
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    directio 4m;    
+
+
+    uwsgi_buffers 8 16k;
+    uwsgi_buffer_size 32k;
+    uwsgi_connect_timeout 300;
+    uwsgi_send_timeout 300;
+    uwsgi_read_timeout 300;
+    
+    
+    keepalive_timeout 65;
+    reset_timedout_connection on;
+    send_timeout 10;
+    types_hash_max_size 2048;
+    server_tokens off;
+    server_names_hash_bucket_size 256;
+
+    open_file_cache max=10000 inactive=20s;
+    open_file_cache_valid 30s;
+    open_file_cache_min_uses 5;
+    open_file_cache_errors off;
+
+    uwsgi_temp_path /var/cache/NGINX 1 2;
+    uwsgi_cache_path /var/cache/NGINX keys_zone=mycache:20m loader_threshold=300
+                     loader_files=200 max_size=20g levels=1:2 inactive=15m;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format kevlar '$remote_addr $remote_user [$time_local] ' 
+                      '"$request" $status $body_bytes_sent '
+                      '"$http_referer" "$http_user_agent" $request_uri$request_body$cookie_authenticated $upstream_cache_status';
+
+    access_log /var/log/nginx/access.log;
+    #access_log off;
+    error_log /var/log/nginx/error.log;
+
+    gzip on;
+    gzip_comp_level  2;
+    gzip_min_length  1000;
+    gzip_disable "msie6";
+    gzip_proxied any;
+    gzip_types application/json text/css text/plain application/x-javascript text/xml application/xml;
+
+    client_body_timeout 12;
+    client_header_timeout 12;
+    client_max_body_size 10m;
+    client_body_in_single_buffer on;
+    client_body_buffer_size 10K;
+    client_header_buffer_size 1k;
+    large_client_header_buffers 4 32k;
+
+    # Http Push Stream Settings
+    #push_stream_shared_memory_size 32M;
+
+    # Virtual Host Configs
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+

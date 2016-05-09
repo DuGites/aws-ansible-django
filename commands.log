@@ -1,0 +1,3 @@
+ansible-playbook  appserver.yml -i hosts --limit "appserver" --tags "settings" --extra-vars "execute=true" --private-key ~/.ssh/AWS_SCALING_KEYS/APP_SERVER_1.pem
+
+ssh -i ~/www/AWS_SCALING_KEYS/APP_SERVER_1.pem ubuntu@52.24.116.170

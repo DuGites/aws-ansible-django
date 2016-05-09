@@ -1,0 +1,72 @@
+upstream backend {
+    ip_hash;
+    server 172.31.34.73:8001;
+    server 172.31.31.241:8001;
+}
+
+
+server {
+    listen 81;
+    server_name  {{ ansible_eth0.ipv4.address }};
+    charset utf-8;
+
+    client_max_body_size 75M;
+
+    root {{ docroot }}/current/static;
+
+    location / {
+        uwsgi_pass backend;
+        include     /etc/nginx/uwsgi_params;
+
+        {% if subdomain != 'www' %}
+        auth_basic "Restricted Area: Control";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        {% endif %}
+    }
+
+    location /static/ {
+        alias /srv/www/current/static/static/;
+        expires 30d;
+    }
+    
+    location /media {
+        uwsgi_pass backend;
+        include     /etc/nginx/uwsgi_params;
+    }
+
+    location /thumbnail_media/ {
+        uwsgi_pass backend;
+        include     /etc/nginx/uwsgi_params;
+    }
+
+    location /admin/ {
+        uwsgi_pass backend;
+        include     /etc/nginx/uwsgi_params;
+        uwsgi_read_timeout  600;
+
+        {% if subdomain != 'www' %}
+        auth_basic "Restricted Area: Control";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        {% endif %}
+    }
+    location ~ ^/(why-ww|community|spotlight-on|cms|cajulo-101)/ {
+    uwsgi_cache mycache;
+    uwsgi_cache_valid 200 30m;
+    uwsgi_cache_methods GET HEAD;
+    
+    uwsgi_cache_key "$request_uri$request_body$cookie_authenticated";
+    uwsgi_hide_header Set-Cookie;
+    uwsgi_hide_header Cache-Control;
+    uwsgi_hide_header Expires;
+
+    uwsgi_ignore_headers Set-Cookie;
+    uwsgi_ignore_headers Cache-Control;
+    uwsgi_ignore_headers Expires;
+    add_header X-Cached $upstream_cache_status;
+
+    uwsgi_pass backend;
+    include /etc/nginx/uwsgi_params;
+}
+
+}
+

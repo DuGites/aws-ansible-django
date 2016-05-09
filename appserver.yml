@@ -1,0 +1,11 @@
+- hosts: appserver
+  become: True
+  roles:
+      - app
+
+- hosts: web
+  become: True
+  become_user: root
+  become_method: sudo
+  roles:
+      - web

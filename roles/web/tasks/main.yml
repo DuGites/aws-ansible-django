@@ -1,0 +1,70 @@
+- name: delete var lib apt
+  file: state=absent path=/var/lib/apt/lists
+
+- name: update apt
+  apt: update_cache=yes
+  become: yes
+  become_user: root
+  become_method: sudo
+  ignore_errors: true
+  tags:
+    - update
+
+- name: install additional packages
+  apt: pkg={{ item }} state=present cache_valid_time=3600
+  sudo: yes
+  sudo_user: root
+  ignore_errors: true
+  with_items:
+    - ntp
+    - nginx
+    - nginx-extras
+    - git
+    - python-passlib
+  tags:
+      - apt
+
+- htpasswd: path=/etc/nginx/.htpasswd name=wkevlar password=!VINOSF851! owner={{ owner }} group={{ group }} mode=0640
+
+- name: copy server configuration for nginx
+  template:
+      src=wkevlar.conf.j2
+      dest=/etc/nginx/sites-available/wkevlar.conf
+
+- name: copy nginx configuration
+  template:
+      src=nginx.conf.j2
+      dest=/etc/nginx/nginx.conf
+
+- name: Delete the default nginx site
+  file: path=/etc/nginx/sites-enabled/default state=absent
+
+- name: enable site
+  file:
+    src=/etc/nginx/sites-available/wkevlar.conf
+    dest=/etc/nginx/sites-enabled/wkevlar.conf
+    state=link
+
+- name: Creates nginx error log file.
+  file: path=/var/log/nginx/error.log state=touch owner=www-data group=www-data mode=0775
+  tags:
+      - configuration
+
+- name: Git clone the Static directory
+  git: repo=git@bitbucket.org:mendonca/www.git
+       dest=/home/ubuntu/www
+       key_file=/home/ubuntu/.ssh/ansible_aws
+       accept_hostkey=yes
+  tags:
+      - checkout
+
+- name: Copy from Tmp to Static
+  copy: src=/home/ubuntu/www/src/static/ dest=/srv/www/current/static/ owner=www-data group=www-data mode=0644
+  become: yes
+  tags:
+      - copy
+
+- name: restart nginx
+  service: name=nginx state=restarted
+  tags:
+      - restart

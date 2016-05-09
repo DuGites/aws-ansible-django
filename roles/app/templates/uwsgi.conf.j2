@@ -1,0 +1,25 @@
+[program:{{ app_name }}]
+user={{ owner }}
+command={{ docroot }}/current/venv/bin/uwsgi --ini {{ docroot }}/current/mendonca/uwsgi.ini
+directory={{ docroot }}/current
+environment=
+    PATH="{{ docroot }}/current/venv/bin:$PATH",
+    PYTHONPATH="{{ docroot }}/current/:{{ docroot }}/current/mendonca",
+    AWS_ACCESS_KEY_ID="{{ aws_id }}",
+    AWS_SECRET_ACCESS_KEY="{{ aws_secret }}",
+    ENV="development",
+    MEMCACHIER_SERVERS="127.0.0.1",
+    AWS_STORAGE_BUCKET_NAME="kevlaruploads",
+    CDN_DOMAIN="kevlaruploads.mendonca.netdna-cdn.com",
+    GOOGLE_API_KEY="AIzaSyDQti4rGsouwB8Uxdj11DS3PKc1Y86Qy3E"
+
+startsecs=1
+startretries=5
+autostart=true
+autorestart=true
+stopsignal=INT
+
+stdout_logfile_maxbytes=20MB
+stdout_logfile_backups=10
+stdout_capture_maxbytes=1MB
+redirect_stderr=true
