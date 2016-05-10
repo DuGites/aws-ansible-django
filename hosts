@@ -6,8 +6,6 @@
 subdomain=aws-dev
 dest=/etc/postgresql/9.1/main/pg_hba.conf
 app_name=mendonca_dev
-aws_id=AKIAJAD36SA5WV6HU6TQ
-aws_secret=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
 
 [web]
 52.36.66.181
